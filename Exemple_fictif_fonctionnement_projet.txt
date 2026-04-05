@@ -1,0 +1,36 @@
+🛫 LE VOYAGE ALLER (La Demande)
+1. 💻 Frontend (HTML/CSS)
+L'utilisateur est sur son navigateur (Chrome/Edge). Il remplit le formulaire avec ses dates et clique sur le bouton "Chercher une chambre". Le navigateur envoie ce clic sur internet.
+
+2. 🏢 Serveur (Tomcat)
+Tomcat, qui écoute patiemment sur le port 8080, attrape ce clic (la requête HTTP). Il voit que la demande concerne ton projet ehotel, mais il ne sait pas comment chercher des chambres.
+
+3. 🗺️ Routeur (web.xml)
+Tomcat consulte ton fichier web.xml (son GPS). Le fichier lui dit : "Quand on te demande une recherche de chambre, donne le travail au fichier Java qui s'appelle RechercheServlet.java".
+
+4. 🧠 Backend (Code Java / Servlet)
+Ton code Java se réveille. Il prend les dates que l'utilisateur a tapées et prépare une commande SQL (ex: SELECT * FROM Chambres WHERE...).
+
+5. 🔌 Connecteur (Le .jar JDBC)
+Java ne parle pas SQL. Il donne donc sa commande SQL au "petit fichier" (le Driver). Le Driver traduit cette commande Java en langage 100 % compréhensible par PostgreSQL.
+
+6. 🗄️ Base de données (PostgreSQL 16)
+PostgreSQL reçoit la commande traduite. Il fouille dans ses tables, trouve les 5 chambres disponibles pour ces dates, et les prépare pour l'envoi.
+
+
+
+🛬 LE VOYAGE RETOUR (La Réponse)
+7. 🔌 Connecteur (Le .jar JDBC)
+Le Driver prend les données brutes (les tableaux) de PostgreSQL et les retraduit dans l'autre sens pour que Java puisse les manipuler (ce qu'on appelle un objet ResultSet).
+
+8. 🧠 Backend (Code Java / Servlet)
+Ton code Java reçoit les données des chambres. Il prend ces informations et génère littéralement du nouveau code HTML à la volée (il "dessine" les prix et les lits dans des balises <div> ou <table>).
+
+9. 🗺️ Routeur (web.xml)
+(Étape repos). Le GPS n'a plus rien à faire pour le retour, la route est déjà connue. Le code Java passe directement le HTML fini à Tomcat.
+
+10. 🏢 Serveur (Tomcat)
+Tomcat prend tout ce beau code HTML tout neuf, l'emballe dans un paquet officiel (une "Réponse HTTP"), et l'expédie à l'adresse exacte du navigateur qui avait fait le clic à l'étape 1.
+
+11. 💻 Frontend (HTML/CSS)
+Le navigateur de l'utilisateur reçoit le paquet de Tomcat. Il lit le code HTML/CSS, l'affiche, et BOOM : la liste des chambres apparaît enfin sur l'écran !
