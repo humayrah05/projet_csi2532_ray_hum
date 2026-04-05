@@ -133,10 +133,21 @@ L'application utilise un fichier centralisé (`DBConnexion.java`) pour gérer to
 javac -d app/WEB-INF/classes -cp "app/WEB-INF/lib/*" src/DBConnexion.java
 ```
 
-### Étape 2 : Lancement de l'Interface Web
+### Étape 2 : Lancement du Serveur (Tomcat)
+Avant d'accéder au site, le moteur de l'application doit être allumé.
+
+1. Ouvrir l'Invite de commande (CMD) ou PowerShell.
+2. Naviguer vers le dossier `bin` de Tomcat :
+   `cd C:\Chemin\Vers\apache-tomcat-9.0.117\bin`
+3. Lancer le moteur Catalina directement :
+   `catalina.bat run`
+
+*(Note : Laissez cette console ouverte. On utilise `catalina.bat run` au lieu de `startup.bat` pour pouvoir lire les logs et les erreurs en direct).*
+
+### Étape 3 : Lancement de l'Interface Web
 L'application principale s'exécute via le serveur Tomcat. 
 
-1. Assurez-vous que Tomcat est bien en cours d'exécution (voir Partie 1, Étape 3).
+1. Assurez-vous que Tomcat est bien en cours d'exécution (voir Étape 2).
 2. Ouvrez votre navigateur Web.
 3. Accédez à la page d'accueil dynamique : `http://localhost:8080/ehotel/`
 
