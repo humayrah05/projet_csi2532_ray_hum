@@ -2,6 +2,13 @@
 
 Ce guide explique comment configurer l'environnement de développement local avec Apache Tomcat 9.0 pour le projet de bases de données (CSI 2532). Cette méthode permet de lier le serveur directement au dossier du projet sans avoir à copier-coller les fichiers dans les dossiers internes de Tomcat.
 
+# Technologies choisis
+Base de données : PostgreSQL
+Serveur : Apache Tomcat
+Backend : Java
+Frontend : jsp (semblable à html mais version dynamique)
+
+
 ## 📋 Prérequis
 1. Avoir téléchargé **Apache Tomcat 9.0** (`apache-tomcat-9.0.117-windows-x64.zip`) et l'avoir extrait sur le PC.
 2. Avoir installé **Java Development Kit (JDK) 21**.
