@@ -133,7 +133,7 @@ java -cp "app/WEB-INF/classes;app/WEB-INF/lib/*" src.test.TestConnexion
 
 Maintenant que l'environnement et la base de données sont testés et fonctionnels, voici comment compiler et lancer l'application Web qui sera utilisée au quotidien.
 
-### Étape 1 : Compilation du Connecteur Principal
+### Étape 1 : Compilation du Connecteur Principal (optionel)
 L'application utilise un fichier centralisé (`DBConnexion.java`) pour gérer toutes les communications avec PostgreSQL. Ouvrez un terminal à la **racine du projet** et compilez ce fichier source :
 
 ```powershell
@@ -156,6 +156,6 @@ L'application principale s'exécute via le serveur Tomcat.
 
 1. Assurez-vous que Tomcat est bien en cours d'exécution (voir Étape 2).
 2. Ouvrez votre navigateur Web.
-3. Accédez à la page d'accueil dynamique : `http://localhost:8080/ehotel/`
+3. Accédez à la page d'accueil dynamique : `http://localhost:8080/ehotel/rooms`
 
 L'interface web lira automatiquement les données depuis PostgreSQL en utilisant le connecteur Java fraîchement compilé !

@@ -8,29 +8,27 @@
     String action = request.getParameter("action");
     String hotelAddress = "";
     
-    // --- GESTION DES MESSAGES FLASH (Pour éviter le bug du F5) ---
     String message = "";
     if (session.getAttribute("flashMessage") != null) {
         message = (String) session.getAttribute("flashMessage");
         session.removeAttribute("flashMessage");
     }
 
-    // DÉCONNEXION
     if ("logout".equals(action)) {
         session.invalidate();
         response.sendRedirect(request.getRequestURI());
         return;
     }
 
-    // 2. LOGIQUE DE CONNEXION
+    // 2. LOGIQUE DE CONNEXION (Correction : minuscules pour 'employee')
     if ("login".equals(action)) {
         String sin = request.getParameter("loginSIN");
         try (Connection con = DBConnexion.getConnection()) {
-            PreparedStatement pstmt = con.prepareStatement("SELECT employee_SIN, hotel_id, full_name FROM \"Employee\" WHERE employee_SIN = ?");
+            PreparedStatement pstmt = con.prepareStatement("SELECT employee_sin, hotel_id, full_name FROM employee WHERE employee_sin = ?");
             pstmt.setString(1, sin);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                session.setAttribute("empSIN", rs.getString("employee_SIN"));
+                session.setAttribute("empSIN", rs.getString("employee_sin"));
                 session.setAttribute("empHotelID", rs.getInt("hotel_id"));
                 session.setAttribute("empName", rs.getString("full_name"));
                 response.sendRedirect(request.getRequestURI());
@@ -44,31 +42,38 @@
     // 3. RÉCUPÉRATION ADRESSE HÔTEL
     if (empHotelID != null) {
         try (Connection con = DBConnexion.getConnection()) {
-            PreparedStatement pstmt = con.prepareStatement("SELECT address FROM \"Hotel\" WHERE hotel_ID = ?");
+            PreparedStatement pstmt = con.prepareStatement("SELECT address FROM hotel WHERE hotel_id = ?");
             pstmt.setInt(1, empHotelID);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) { hotelAddress = rs.getString("address"); }
         } catch (Exception e) { }
     }
 
-    // 4. LOGIQUE DE CHECK-IN / ANNULATION (AVEC REDIRECTION ANTI-F5)
+    // 4. LOGIQUE DE CHECK-IN / ANNULATION (Correction : Ajout des dates obligatoires)
     if (empSIN != null) {
         if ("checkin".equals(action)) {
             String bNum = request.getParameter("booking_number");
             String rNum = request.getParameter("room_number");
             try (Connection con = DBConnexion.getConnection()) {
                 con.setAutoCommit(false);
-                String sqlRent = "INSERT INTO \"Renting\" (renting_number, room_number) VALUES ((SELECT COALESCE(MAX(renting_number),0)+1 FROM \"Renting\"), ?)";
+                
+                // Récupération des dates de la réservation pour la location
+                PreparedStatement psDate = con.prepareStatement("SELECT start_date, end_date FROM booking WHERE booking_number = ?");
+                psDate.setInt(1, Integer.parseInt(bNum));
+                ResultSet rsD = psDate.executeQuery(); 
+                rsD.next();
+                
+                // Insertion avec les dates obligatoires (Correction : minuscules pour 'renting')
+                String sqlRent = "INSERT INTO renting (room_number, start_date, end_date) VALUES (?, ?, ?) RETURNING renting_number";
                 PreparedStatement psRent = con.prepareStatement(sqlRent);
                 psRent.setInt(1, Integer.parseInt(rNum));
-                psRent.executeUpdate();
-                
-                Statement stmt = con.createStatement();
-                ResultSet rsRent = stmt.executeQuery("SELECT MAX(renting_number) FROM \"Renting\"");
-                rsRent.next();
-                int newRentingNum = rsRent.getInt(1);
+                psRent.setDate(2, rsD.getDate("start_date"));
+                psRent.setDate(3, rsD.getDate("end_date"));
+                ResultSet rsNew = psRent.executeQuery(); 
+                rsNew.next();
+                int newRentingNum = rsNew.getInt(1);
 
-                String sqlLink = "INSERT INTO \"RoomHas\" (booking_number, renting_number) VALUES (?, ?)";
+                String sqlLink = "INSERT INTO roomhas (booking_number, renting_number) VALUES (?, ?)";
                 PreparedStatement psLink = con.prepareStatement(sqlLink);
                 psLink.setInt(1, Integer.parseInt(bNum));
                 psLink.setInt(2, newRentingNum);
@@ -78,7 +83,6 @@
                 session.setAttribute("flashMessage", "<div class='success'>✅ Client enregistré !</div>");
                 response.sendRedirect(request.getRequestURI());
                 return;
-                
             } catch (Exception e) { 
                 session.setAttribute("flashMessage", "<div class='error'>Erreur : " + e.getMessage() + "</div>");
                 response.sendRedirect(request.getRequestURI());
@@ -89,16 +93,12 @@
             String rentNum = request.getParameter("renting_number");
             try (Connection con = DBConnexion.getConnection()) {
                 con.setAutoCommit(false);
-                PreparedStatement ps1 = con.prepareStatement("DELETE FROM \"RoomHas\" WHERE renting_number = ?");
-                ps1.setInt(1, Integer.parseInt(rentNum)); ps1.executeUpdate();
-                PreparedStatement ps2 = con.prepareStatement("DELETE FROM \"Renting\" WHERE renting_number = ?");
-                ps2.setInt(1, Integer.parseInt(rentNum)); ps2.executeUpdate();
+                con.prepareStatement("DELETE FROM roomhas WHERE renting_number = " + rentNum).executeUpdate();
+                con.prepareStatement("DELETE FROM renting WHERE renting_number = " + rentNum).executeUpdate();
                 con.commit();
-                
-                session.setAttribute("flashMessage", "<div class='success'>✅ Check-in annulé avec succès.</div>");
+                session.setAttribute("flashMessage", "<div class='success'>✅ Check-in annulé.</div>");
                 response.sendRedirect(request.getRequestURI());
                 return;
-                
             } catch (Exception e) { 
                 session.setAttribute("flashMessage", "<div class='error'>Erreur : " + e.getMessage() + "</div>");
                 response.sendRedirect(request.getRequestURI());
@@ -115,7 +115,7 @@
     <title>Espace Staff - e-Hôtels</title>
     <style>
         :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --success: #27ae60; --warning: #f1c40f; --danger: #e74c3c; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f8f9fa; margin: 0; display: flex; min-height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; margin: 0; display: flex; min-height: 100vh; }
         .sidebar { width: 250px; background: var(--primary); color: white; padding: 20px; display: flex; flex-direction: column; }
         .main-content { flex: 1; padding: 40px; overflow-y: auto; }
         .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 30px; }
@@ -154,6 +154,7 @@
             <p style="font-size: 0.8em;"><%= hotelAddress %></p>
             
             <a href="management" class="btn btn-manage">⚙️ Gestion & CRUD</a>
+            
             <form method="POST" style="margin-top:10px;">
                 <input type="hidden" name="action" value="logout">
                 <button type="submit" style="background:none; border:none; color:white; cursor:pointer; opacity:0.6; width:100%; text-align:left; padding:10px 0;">🚪 Déconnexion</button>
@@ -164,19 +165,19 @@
             <%= message %>
             
             <div class="card">
-                <h3 style="color:var(--secondary);">⏳ Arrivées prévues aujourd'hui</h3>
+                <h3 style="color:var(--secondary);">⏳ Arrivées prévues</h3>
                 <table>
                     <thead><tr><th>Client</th><th>Chambre</th><th>Statut</th><th>Action</th></tr></thead>
                     <tbody>
                         <% try (Connection con = DBConnexion.getConnection()) {
-                            // J'AI REMIS TA REQUÊTE AVEC LE ROW_NUMBER ICI
-                            String sql = "WITH RN AS (SELECT room_number, ROW_NUMBER() OVER(PARTITION BY hotel_ID ORDER BY room_number) as num FROM \"HotelContains\") " +
-                                         "SELECT b.booking_number, b.room_number, c.full_name, RN.num FROM \"Booking\" b " +
-                                         "JOIN \"CustomerReserves\" cr ON b.booking_number = cr.booking_number " +
-                                         "JOIN \"Customer\" c ON cr.customer_SIN = c.customer_SIN " +
-                                         "JOIN \"HotelContains\" hc ON b.room_number = hc.room_number " +
+                            // Correction : minuscules partout
+                            String sql = "WITH RN AS (SELECT room_number, ROW_NUMBER() OVER(PARTITION BY hotel_id ORDER BY room_number) as num FROM hotelcontains) " +
+                                         "SELECT b.booking_number, b.room_number, c.full_name, RN.num FROM booking b " +
+                                         "JOIN customerreserves cr ON b.booking_number = cr.booking_number " +
+                                         "JOIN customer c ON cr.customer_sin = c.customer_sin " +
+                                         "JOIN hotelcontains hc ON b.room_number = hc.room_number " +
                                          "JOIN RN ON b.room_number = RN.room_number " +
-                                         "WHERE hc.hotel_ID = ? AND b.booking_number NOT IN (SELECT booking_number FROM \"RoomHas\")";
+                                         "WHERE hc.hotel_id = ? AND b.booking_number NOT IN (SELECT booking_number FROM roomhas)";
                             PreparedStatement ps = con.prepareStatement(sql);
                             ps.setInt(1, empHotelID);
                             ResultSet rs = ps.executeQuery();
@@ -202,18 +203,17 @@
             <div class="card">
                 <h3 style="color:var(--secondary);">✅ Locations en cours</h3>
                 <table>
-                    <thead><tr><th>ID Location</th><th>Client</th><th>Chambre</th><th>Statut</th><th>Action</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Client</th><th>Chambre</th><th>Statut</th><th>Action</th></tr></thead>
                     <tbody>
                         <% try (Connection con = DBConnexion.getConnection()) {
-                            // ET J'AI REMIS TA REQUÊTE AVEC LE ROW_NUMBER ICI AUSSI
-                            String sqlDone = "WITH RN AS (SELECT room_number, ROW_NUMBER() OVER(PARTITION BY hotel_ID ORDER BY room_number) as num FROM \"HotelContains\") " +
-                                             "SELECT r.renting_number, r.room_number, c.full_name, RN.num FROM \"Renting\" r " +
-                                             "JOIN \"RoomHas\" rh ON r.renting_number = rh.renting_number " +
-                                             "JOIN \"CustomerReserves\" cr ON rh.booking_number = cr.booking_number " +
-                                             "JOIN \"Customer\" c ON cr.customer_SIN = c.customer_SIN " +
-                                             "JOIN \"HotelContains\" hc ON r.room_number = hc.room_number " +
+                            String sqlDone = "WITH RN AS (SELECT room_number, ROW_NUMBER() OVER(PARTITION BY hotel_id ORDER BY room_number) as num FROM hotelcontains) " +
+                                             "SELECT r.renting_number, c.full_name, RN.num FROM renting r " +
+                                             "JOIN roomhas rh ON r.renting_number = rh.renting_number " +
+                                             "JOIN customerreserves cr ON rh.booking_number = cr.booking_number " +
+                                             "JOIN customer c ON cr.customer_sin = c.customer_sin " +
+                                             "JOIN hotelcontains hc ON r.room_number = hc.room_number " +
                                              "JOIN RN ON r.room_number = RN.room_number " +
-                                             "WHERE hc.hotel_ID = ?";
+                                             "WHERE hc.hotel_id = ?";
                             PreparedStatement psD = con.prepareStatement(sqlDone);
                             psD.setInt(1, empHotelID);
                             ResultSet rsD = psD.executeQuery();
@@ -227,7 +227,7 @@
                                     <form method="POST" style="margin:0">
                                         <input type="hidden" name="action" value="cancel_checkin">
                                         <input type="hidden" name="renting_number" value="<%= rsD.getInt("renting_number") %>">
-                                        <button type="submit" class="btn btn-cancel" onclick="return confirm('Annuler ?')">Annuler</button>
+                                        <button type="submit" class="btn btn-cancel" onclick="return confirm('Annuler ce check-in ?')">Annuler</button>
                                     </form>
                                 </td>
                             </tr>

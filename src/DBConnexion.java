@@ -7,7 +7,7 @@ import java.sql.SQLException;
 public class DBConnexion {
     
     // Les informations de ta base de données
-    private static final String URL = "jdbc:postgresql://localhost:5432/TEST_database_ehotel";
+    private static final String URL = "jdbc:postgresql://localhost:5432/Database_Ehotel_Project";
     private static final String USER = "postgres";
     private static final String PASS = "pgadmin1234";
 
