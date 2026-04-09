@@ -201,7 +201,7 @@
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="login">
                     <label>NAS (9 chiffres) :</label>
-                    <input type="text" name="loginSIN" placeholder="Ex: 900000001" required>
+                    <input type="text" name="loginSIN" placeholder="Ex: 900000001" pattern="\d{9}" maxlength="9" title="Le NAS doit contenir exactement 9 chiffres." oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                     <button type="submit">Entrer</button>
                 </form>
             </div>
@@ -210,7 +210,7 @@
                 <form method="POST" action="">
                     <input type="hidden" name="action" value="register">
                     <label>NAS :</label>
-                    <input type="text" name="regSIN" placeholder="Ex: 900000001" required>
+                    <input type="text" name="regSIN" placeholder="Ex: 900000001" pattern="\d{9}" maxlength="9" title="Le NAS doit contenir exactement 9 chiffres." oninput="this.value = this.value.replace(/[^0-9]/g, '')" required>
                     <label>Nom complet :</label>
                     <input type="text" name="regName" placeholder="Ton nom" required>
                     <label>Adresse :</label>
